@@ -2,6 +2,7 @@ import json
 from argparse import ArgumentTypeError
 from collections import deque
 from enum import Enum
+import copy
 
 
 class Persona:
@@ -42,6 +43,18 @@ class Persona:
 
     def validatePersona(self):
         self._validateType()
+
+    def getDescriptor(self):
+        """
+        :return: Copy of descriptor
+        """
+        return copy.copy(self.descriptor)
+
+    def getCapabilities(self):
+        """
+        :return: Copy of capabilities
+        """
+        return copy.copy(self.capabilities)
 
 
     #CHATGPT Generated Code - Works as expected!
@@ -96,22 +109,23 @@ class Criteria:
 
         return True
 
-    def _parse_op(self, rule):
-        #Gets the operator from a criteria rule
+    def _parseOperator(self, rule):
+        #Ensures that it doesn't matter whether we use string or Enum
         operator, crit_value = next(iter(rule.items()))
-        if isinstance(operator, CriteriaOperator):
-            operator = operator.value
+        if isinstance(operator, str):
+            operator = CriteriaOperator(operator)
         return operator, crit_value
 
-    def _check_descriptor(self, desc_criteria, pers: Persona):
-        desc_persona = pers.descriptor
+    def checkDescriptor(self, desc_criteria, pers: Persona):
+        desc_persona = pers.getDescriptor()
+
         for field_name, rule in desc_criteria.items():
-            operator, crit_value = self._parse_op(rule)
+            operator, crit_value = self._parseOperator(rule)
 
             #Filter based off of operator type
 
             #subset check: If not all elements of the crit_value are contained in the persona_value it returns false
-            if operator == "in":
+            if operator == CriteriaOperator.IN:
 
                 if field_name != "type":
                     persona_value = desc_persona[field_name]
@@ -129,7 +143,7 @@ class Criteria:
                         return False
 
 
-            elif operator == "eq":
+            elif operator == CriteriaOperator.EQ:
                 persona_value = desc_persona[field_name]
                 if crit_value != persona_value:
                     return False
@@ -138,53 +152,29 @@ class Criteria:
 
         return True
 
-    def _check_capabilities(self, cap_criteria, pers: Persona):
-        cap_names = set(pers.capabilities.keys())
+    def checkCapabilities(self,cap_criteria, pers: Persona):
+        """
+        :param cap_criteria: The criteria by which we should filter - in v0 we only allow for filtering based off of the names of the criteria.
+        :return:
+        """
+        cap_pers = pers.getCapabilities()
+        cap_names = list(cap_pers)
 
-        # Accept shorthand like {"in": "setPower"} or {"in": ["setPower","turnOn"]}
-        # and also enum keys CriteriaOperator.IN / EQ
-        def is_op_dict(d):
-            return isinstance(d, dict) and any(
-                k in d for k in ("in", "eq", CriteriaOperator.IN, CriteriaOperator.EQ)
-            )
+        for op_key,crit_cap_names in cap_criteria.items():
+            operator, _ = self._parseOperator({op_key: crit_cap_names})
 
-        if is_op_dict(cap_criteria):
-            operator, crit_value = self._parse_op(cap_criteria)
-            # normalize to a set of required names
-            if isinstance(crit_value, (list, tuple, set)):
-                required = set(crit_value)
-            else:
-                required = {crit_value}
+            if operator == CriteriaOperator.IN:
 
-            if operator == "in":
-                # require all listed capability names to exist
-                return required.issubset(cap_names)
-
-            elif operator == "eq":
-                # eq with one value => that capability must exist
-                # eq with multiple values => EXACT match to that set
-                return (required <= cap_names) if len(required) == 1 else (required == cap_names)
-
-            else:
-                raise ValueError(f"Unsupported operator: {operator}")
-
-        # Fallback: legacy per-capability shape (kept minimal, still name-only)
-        # e.g. {"check": {"in": ["setPower","turnOn"]}}
-        for _, rule in cap_criteria.items():
-            operator, crit_value = self._parse_op(rule)
-            values = {crit_value} if not isinstance(crit_value, (list, tuple, set)) else set(crit_value)
-
-            if operator == "in":
-                if not values.issubset(cap_names):
+                if not all(name in cap_names for name in crit_cap_names):
                     return False
-            elif operator == "eq":
-                if len(values) == 1:
-                    if not values.issubset(cap_names):
-                        return False
-                else:
-                    if values != cap_names:
-                        return False
+
+            elif operator == CriteriaOperator.EQ:
+
+                if not crit_cap_names == cap_names:
+                    return False
+
             else:
-                raise ValueError(f"Unsupported operator: {operator}")
+
+                raise ValueError(f"Unsupported operator for criterion match: {operator}")
 
         return True
