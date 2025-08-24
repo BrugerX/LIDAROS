@@ -1,5 +1,5 @@
 
-local las = import 'singemodelaser_descriptor.jsonnet';
+local laser_profile = import 'laser_profile.jsonnet';
 
 local Toptica_Ibeam_Descriptor = {
   id: 'lazer',
@@ -12,7 +12,7 @@ local Toptica_Ibeam_Descriptor = {
 };
 
 
-las
+laser_profile
 {
  descriptor+: Toptica_Ibeam_Descriptor
 }

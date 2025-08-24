@@ -1,0 +1,4 @@
+int64[] channels
+int64 out_power_w
+---
+bool is_success
