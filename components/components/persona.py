@@ -32,17 +32,18 @@ class Persona:
     def _validateType(self):
         type_tree = self.getTypeTree()
 
-        if(type_tree is []):
+        if(type_tree == []):
             raise ValueError(f"Type tree is empty - {self.type}")
 
         if(any(type_leaf is "" for type_leaf in type_tree)):
-            raise ValueError(f"A type_leaf is empty implying a \\ without a type name - {self.type}")
+            raise ValueError(f"A type_leaf is empty implying a slash without a type name - {self.type}")
 
         if(self.type[-1] == "\\"):
-            raise ValueError(f"Types are not allowed to end on \\ - {self.type}")
+            raise ValueError(f"Types are not allowed to end on slash - {self.type}")
 
     def validatePersona(self):
         self._validateType()
+        #TODO: Add tests for the capabilities
 
     def getDescriptor(self):
         """
@@ -98,13 +99,14 @@ class Criteria:
     def checkPersona(self, pers: Persona):
         crit = self.criteria_dict
 
+
         #Both checks return a truth value - if either of them are false, the total check fails
         if "descriptor" in crit:
-            if not self._check_descriptor(crit["descriptor"], pers):
+            if not self.checkDescriptor(crit["descriptor"], pers):
                 return False
 
         if "capabilities" in crit:
-            if not self._check_capabilities(crit["capabilities"], pers):
+            if not self.checkCapabilities(crit["capabilities"], pers):
                 return False
 
         return True
