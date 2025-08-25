@@ -7,10 +7,8 @@ bp {
     type: bp.descriptor.type + "/" + "device"
   },
 capabilities+: {
-  turnOn: {
-    topic: $.descriptor.id + "/turnOn"
-  }
-}
+
+
 }
 
 

@@ -7,6 +7,10 @@ import copy
 
 class Persona:
 
+    """
+    Immutable object - Python implementation of persona (see profiles in docs)
+    """
+
     def __init__(self,persona_path : str):
 
         if not(persona_path.endswith(".json")):
@@ -20,7 +24,7 @@ class Persona:
         self.type = self.descriptor["type"]
         self.id = self.descriptor["id"]
 
-        self.validatePersona()
+        self._validatePersona()
 
     def getID(self):
         return self.id
@@ -41,7 +45,7 @@ class Persona:
         if(self.type[-1] == "\\"):
             raise ValueError(f"Types are not allowed to end on slash - {self.type}")
 
-    def validatePersona(self):
+    def _validatePersona(self):
         self._validateType()
         #TODO: Add tests for the capabilities
 
@@ -96,9 +100,22 @@ class Criteria:
     def __init__(self, criteria_dict):
         self.criteria_dict = criteria_dict
 
+    """
+    Wrapper to use the check directly on component rather than persona level.
+    """
+    def checkComponent(self,comp):
+        pers = comp.getPersona()
+        return self. checkPersona(pers)
+
     def checkPersona(self, pers: Persona):
+        """
+        :param pers: The persona to be checked according to this criteria.
+        :return: True if none of the sub-checks return false.
+        This also means, that an empty criteria will always return true.
+        """
         crit = self.criteria_dict
 
+        #TODO: Decide if you should add a typo checker
 
         #Both checks return a truth value - if either of them are false, the total check fails
         if "descriptor" in crit:
