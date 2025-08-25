@@ -140,13 +140,15 @@ class Criteria:
 
                 else:
                     type_tree = pers.getTypeTree()
+                    #Turn it into a singleton
                     crit_iter = crit_value if isinstance(crit_value, (list, tuple, set)) else [crit_value]
                     if not all(val in type_tree for val in crit_iter):
                         return False
 
 
             elif operator == CriteriaOperator.EQ:
-                persona_value = desc_persona[field_name]
+                persona_value = pers.getTypeTree()
+
                 if crit_value != persona_value:
                     return False
             else:
