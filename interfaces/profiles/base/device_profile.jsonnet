@@ -7,8 +7,7 @@ bp {
     type: bp.descriptor.type + "/" + "device"
   },
 capabilities+: {
-
-
+}
 }
 
 

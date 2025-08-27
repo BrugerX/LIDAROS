@@ -3,9 +3,7 @@ from abc import ABC,abstractmethod
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from persona import Persona
-
-from persona import Persona
+from components.persona import Persona
 
 
 
@@ -19,7 +17,7 @@ class ComponentProfile(Node,ABC):
 
         #The Node parent class needs to be given a name
 
-        super.__init__(self.id)
+        super().__init__(self.id)
 
     @property
     def id(self) -> str:
@@ -34,7 +32,7 @@ class ComponentProfile(Node,ABC):
 
 class DeviceProfile(ComponentProfile,ABC):
     def __init__(self,persona:Persona):
-        super.__init__(persona)
+        super().__init__(persona)
 
     @abstractmethod
     def isConnected(self) -> bool:
