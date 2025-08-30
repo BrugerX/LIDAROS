@@ -9,11 +9,11 @@ class MyTestCase_Operators(unittest.TestCase):
         cls.test_pers = Persona(r"D:\LIDAROS\interfaces\profiles\test\testpersona_persona.json")
 
     """
-    We show that "eq" operator works if the value for the criterion is equal to the persona's
+    We show that "eq" operator only works if the value for the criterion is equal to the persona's
     """
     def test_eq_type_works(self):
         #The criteria is a subset of the persona
-        criteria_subset = {"descriptor": {"type": {"eq":Type("base")}}}
+        criteria_subset = {"descriptor": {"type": {"eq":Type("base/device")}}}
         self.assertFalse(Criteria(criteria_subset).checkPersona(self.test_pers))
 
         #The criteria is equivalent to the persona
@@ -58,8 +58,8 @@ class MyTestCase_Operators(unittest.TestCase):
         self.assertFalse(Criteria(criteria_wrong).checkPersona(self.test_pers))
 
     """
-    We show that the "in" operator is insensitive with regards to the value of the criterion.
-    That is to say "in" is a set operator.
+    We show that the "in" operator is insensitive with regards to the value of the criterion if it has the right type
+    That is to say "in" is a set operator for list,value and dict.
     """
     def test_in_order_insensitive(self):
         desc = self.__class__.test_pers.getDescriptor()
@@ -69,7 +69,23 @@ class MyTestCase_Operators(unittest.TestCase):
         self.assertTrue(Criteria(criteria_a).checkPersona(self.__class__.test_pers))
         self.assertTrue(Criteria(criteria_b).checkPersona(self.__class__.test_pers))
 
+    """
+    We show that "in" is order sensitive for strings as well as types.
+    """
+    def test_in_order_sensitive(self):
+        #First we do it for type
+        type_tree_pers = self.__class__.test_pers.getTypeTree()
+        sub_tree = type_tree_pers[:2]
+        sub_tree_shuffled = list(reversed(sub_tree))
+        type_shuffled = Type(sub_tree_shuffled)
+        type_sub =  Type(sub_tree)
 
+        crit_shuffled = Criteria({"descriptor": {"type": {"in": type_shuffled}}})
+        crit_true = Criteria({"descriptor": {"type": {"in": type_sub}}})
+        print(type_shuffled)
+
+        self.assertFalse(crit_shuffled.checkPersona(self.__class__.test_pers))
+        self.assertTrue(crit_true.checkPersona(self.__class__.test_pers))
 
     """
     We show that the "eq" operator differentiates between different datatypes

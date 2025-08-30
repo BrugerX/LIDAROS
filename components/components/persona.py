@@ -6,12 +6,28 @@ import copy
 
 class Type:
 
-    def __init__(self,type_str):
-        self._type_str = type_str
-        self._type_tree = self._createTypeTree()
+
+    def __init__(self,type_data):
+
+        """
+        :param type_data: Type string or type tree.
+        """
+
+        if(isinstance(type_data,list)):
+            self._type_tree = type_data
+            self._type_str = self._createTypeString()
+
+        elif(isinstance(type_data,str)):
+            self._type_str = type_data
+            self._type_tree = self._createTypeTree()
+
+        self._validateType()
 
     def _createTypeTree(self):
         return self.type_str.split("/")
+
+    def _createTypeString(self):
+        return "/".join(self._type_tree)
 
     @property
     def type_str(self):
@@ -22,8 +38,21 @@ class Type:
         return copy.copy(self._type_tree)
 
     def __eq__(self, other):
-        flag = all(x == y for x, y in zip(self.type_tree, other.type_tree))
+        flag = self.type_tree == other.type_tree
         return flag
+
+    def _validateType(self):
+
+        if(self.type_tree == []):
+            raise ValueError(f"Type tree is empty - {self.type_tree}")
+
+        if(any(type_leaf is "" for type_leaf in self.type_tree)):
+            raise ValueError(f"A type_leaf is empty implying a slash without a type name - {self.type_str} \t {self.type_tree}")
+
+        if(self.type_str[-1] == "\\"):
+            raise ValueError(f"Types are not allowed to end on slash - {self.type_str}")
+
+
 
 
 class Persona:
@@ -54,21 +83,9 @@ class Persona:
     def getTypeString(self):
         return self.type.type_str
 
-    #Get all the types of this and previous generations
+    # Get all the types of this and previous generations
     def getTypeTree(self) -> list:
         return self.type.type_tree
-
-    def _validateType(self):
-        type_tree = self.getTypeTree()
-
-        if(type_tree == []):
-            raise ValueError(f"Type tree is empty - {self.type}")
-
-        if(any(type_leaf is "" for type_leaf in type_tree)):
-            raise ValueError(f"A type_leaf is empty implying a slash without a type name - {self.type}")
-
-        if(self.type.type_str[-1] == "\\"):
-            raise ValueError(f"Types are not allowed to end on slash - {self.type}")
 
     def _validateDescriptor(self):
         #We don't allow dictionaries in V=
@@ -78,7 +95,6 @@ class Persona:
                     raise ValueError("Dictionaries are not as a part of a descriptor in the current iteration of LIROS")
 
     def _validatePersona(self):
-        self._validateType()
         self._validateDescriptor()
         #TODO: Add tests for the capabilities
 
@@ -183,12 +199,30 @@ class Criteria:
         else:
             raise ValueError(f"Cannot iteralize object {obj} of type {type(obj)}")
 
+    def _containsSublist(a, b):
+        n, m = len(a), len(b)
+        return n == 0 or any(
+            all(b[i + j] == a[j] for j in range(n))
+            for i in range(m - n + 1)
+        )
+
     """
     iter(a) is a member of iter(b)^sup
+    
+    Where sup requires knowledge of the type of x
     """
 
-    def _contains_super(self,a,b):
-        return all(val in b for val in a)
+    def _containsSuper(self, a, b, x):
+        if(isinstance(x,(str,Type))):
+            if isinstance(a, str) and isinstance(b, str):
+                #Substring search is ordered
+                return a in b
+
+            n = len(a)
+            #We sadly have to do a O(m*n) check
+            return n == 0 or any(b[i:i + n] == a for i in range(len(b) - n + 1))
+        else:
+            return all(val in b for val in a)
 
     def checkDescriptor(self,desc_criteria,pers:Persona):
         desc_pers = pers.getDescriptor()
@@ -207,7 +241,7 @@ class Criteria:
             if(operator == CriteriaOperator.IN):
                 variable_crd_iter = self._iteralize(variable_crd)
                 variable_D_iter = self._iteralize(variable_D)
-                if not self._contains_super(variable_crd_iter,variable_D_iter):
+                if not self._containsSuper(variable_crd_iter, variable_D_iter, variable_D):
                     return False
 
             elif(operator == CriteriaOperator.EQ):
