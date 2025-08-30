@@ -4,6 +4,27 @@ from collections import deque
 from enum import Enum
 import copy
 
+class Type:
+
+    def __init__(self,type_str):
+        self._type_str = type_str
+        self._type_tree = self._createTypeTree()
+
+    def _createTypeTree(self):
+        return self.type_str.split("/")
+
+    @property
+    def type_str(self):
+        return copy.copy(self._type_str)
+
+    @property
+    def type_tree(self):
+        return copy.copy(self._type_tree)
+
+    def __eq__(self, other):
+        flag = all(x == y for x, y in zip(self.type_tree, other.type_tree))
+        return flag
+
 
 class Persona:
 
@@ -20,6 +41,7 @@ class Persona:
             self.data = json.load(f)
 
         self.descriptor = self.data["descriptor"]
+        self.descriptor["type"] = Type(self.descriptor["type"])
         self.capabilities = self.data["capabilities"]
         self.type = self.descriptor["type"]
         self.id = self.descriptor["id"]
@@ -27,11 +49,14 @@ class Persona:
         self._validatePersona()
 
     def getID(self):
-        return self.id
+        return copy.copy(self.id)
+
+    def getTypeString(self):
+        return self.type.type_str
 
     #Get all the types of this and previous generations
     def getTypeTree(self) -> list:
-        return self.type.split("/")
+        return self.type.type_tree
 
     def _validateType(self):
         type_tree = self.getTypeTree()
@@ -42,11 +67,19 @@ class Persona:
         if(any(type_leaf is "" for type_leaf in type_tree)):
             raise ValueError(f"A type_leaf is empty implying a slash without a type name - {self.type}")
 
-        if(self.type[-1] == "\\"):
+        if(self.type.type_str[-1] == "\\"):
             raise ValueError(f"Types are not allowed to end on slash - {self.type}")
+
+    def _validateDescriptor(self):
+        #We don't allow dictionaries in V=
+        if False:
+            for (key,variable) in self.descriptor:
+                if(type(variable) == dict):
+                    raise ValueError("Dictionaries are not as a part of a descriptor in the current iteration of LIROS")
 
     def _validatePersona(self):
         self._validateType()
+        self._validateDescriptor()
         #TODO: Add tests for the capabilities
 
     def getDescriptor(self):
@@ -135,24 +168,76 @@ class Criteria:
             operator = CriteriaOperator(operator)
         return operator, crit_value
 
+    def _iteralize(self,obj):
+        if isinstance(obj, (list, tuple,str)):
+            return obj
+        elif isinstance(obj, (dict)):
+            #By using list we match the formal definition
+            # + We don't get a runtime error if the underlying dict changes :)
+            return list(obj.items())
+        elif isinstance(obj,Type):
+            return obj.type_tree
+        #Primitives
+        elif isinstance(obj, (bool, str, int, float)):
+            return [obj]
+        else:
+            raise ValueError(f"Cannot iteralize object {obj} of type {type(obj)}")
+
+    """
+    iter(a) is a member of iter(b)^sup
+    """
+
+    def _contains_super(self,a,b):
+        return all(val in b for val in a)
+
+    def checkDescriptor(self,desc_criteria,pers:Persona):
+        desc_pers = pers.getDescriptor()
+
+        for key_crd,rule in desc_criteria.items():
+            # We check if the key exists
+            variable_D = desc_pers.get(key_crd,None)
+
+            #There doesn't exist such an item in the persona's descriptor dict
+            if(variable_D is None):
+                return False
+
+            #parse operator ensures compatibility between using CritOperator class and a string for operators
+            operator,variable_crd = self._parseOperator(rule)
+
+            if(operator == CriteriaOperator.IN):
+                variable_crd_iter = self._iteralize(variable_crd)
+                variable_D_iter = self._iteralize(variable_D)
+                if not self._contains_super(variable_crd_iter,variable_D_iter):
+                    return False
+
+            elif(operator == CriteriaOperator.EQ):
+                if not variable_D == variable_crd:
+                    return False
+
+        return True
+
+    """
+    
+    OUTDATED: USED TO SHOW HOW C00L THE NEW METHOD IS AFTER DOING THE FORMAL DEFINITIONS
+    
     def checkDescriptor(self, desc_criteria, pers: Persona):
         desc_persona = pers.getDescriptor()
 
-        for field_name, rule in desc_criteria.items():
-            operator, crit_value = self._parseOperator(rule)
+        for key_crd, rule in desc_criteria.items():
+            operator, variable_crd = self._parseOperator(rule)
 
             #Filter based off of operator type
 
             #subset check: If not all elements of the crit_value are contained in the persona_value it returns false
             if operator == CriteriaOperator.IN:
 
-                if field_name != "type":
-                    persona_value = desc_persona[field_name]
+                if key_crd != "type":
+                    persona_value = desc_persona[key_crd]
 
-                    if not isinstance(crit_value, (list, tuple, set)):
-                        crit_value = [crit_value]
+                    if not isinstance(variable_crd, (list, tuple, set)):
+                        crit_value = [variable_crd]
 
-                    if not all(val in persona_value for val in crit_value):
+                    if not all(val in persona_value for val in variable_crd):
                         return False
 
                 else:
@@ -172,6 +257,8 @@ class Criteria:
                 raise ValueError(f"Unsupported operator for critical match: {operator}")
 
         return True
+        
+        """
 
     def checkCapabilities(self,cap_criteria, pers: Persona):
         """

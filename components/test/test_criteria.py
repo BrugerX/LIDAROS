@@ -1,6 +1,6 @@
 import copy
 import unittest
-from components.components.persona import Persona, Criteria, CriteriaOperator
+from components.components.persona import Persona, Criteria, CriteriaOperator,Type
 
 class MyTestCase_Operators(unittest.TestCase):
 
@@ -13,15 +13,15 @@ class MyTestCase_Operators(unittest.TestCase):
     """
     def test_eq_type_works(self):
         #The criteria is a subset of the persona
-        criteria_subset = {"descriptor": {"type": {"eq": ["base"]}}}
+        criteria_subset = {"descriptor": {"type": {"eq":Type("base")}}}
         self.assertFalse(Criteria(criteria_subset).checkPersona(self.test_pers))
 
         #The criteria is equivalent to the persona
-        criteria_equiv = {"descriptor": {"type": {"eq": ['base','device','test']}}}
+        criteria_equiv = {"descriptor": {"type": {"eq": Type('base/device/test')}}}
         self.assertTrue(Criteria(criteria_equiv).checkPersona(self.test_pers),f"{self.test_pers.getTypeTree()}")
 
         #The criteria is different from the persona
-        criteria_wrong = {"descriptor":{"type":{"eq":["base","laser"]}}}
+        criteria_wrong = {"descriptor":{"type":{"eq":Type("base/laser")}}}
         self.assertFalse(Criteria(criteria_wrong).checkPersona(self.test_pers))
 
     """
@@ -29,13 +29,14 @@ class MyTestCase_Operators(unittest.TestCase):
     """
     def test_eq_order_sensisitive(self):
         #The criteria is equivalent to the persona
-        criteria_equiv = {"descriptor": {"type": {"eq": ['base','device','test']}}}
+        criteria_equiv = {"descriptor":
+                              {"type": {"eq": Type('base/device/test')},"dummy2_list":{"in":[]}}}
         self.assertTrue(Criteria(criteria_equiv).checkPersona(self.test_pers),f"{self.test_pers.getTypeTree()}")
 
-        criteria_arrangement = {"descriptor": {"type": {"eq": ['device','base','test']}}}
+        #Wrong order
+        criteria_arrangement = {"descriptor": {"type": {"eq": Type('device/test/base')}}}
 
-        #They contain the same data
-        self.assertEqual(set(criteria_equiv["descriptor"]["type"]["eq"]),set(criteria_arrangement["descriptor"]["type"]["eq"]))
+        self.assertEqual(set(criteria_equiv["descriptor"]["type"]["eq"].type_tree),set(criteria_arrangement["descriptor"]["type"]["eq"].type_tree))
         #But the ordering is wrong for criteria_arrangement
         self.assertFalse(Criteria(criteria_arrangement).checkPersona(self.test_pers),f"{self.test_pers.getTypeTree()}")
 
@@ -44,16 +45,16 @@ class MyTestCase_Operators(unittest.TestCase):
     """
     def test_in_type_works(self):
         #The criteria is a subset of the persona's
-        criteria_subset = {"descriptor": {"type": {"in": ["base"]}}}
+        criteria_subset = {"descriptor": {"type": {"in": Type("base")}}}
         self.assertTrue(Criteria(criteria_subset).checkPersona(self.test_pers))
 
 
         #The criteria is equivalent to the persona's
-        criteria_equiv = {"descriptor": {"type": {"in": ["base","device","test"]}}}
+        criteria_equiv = {"descriptor": {"type": {"in": Type("base/device/test")}}}
         self.assertTrue(Criteria(criteria_equiv).checkPersona(self.test_pers))
 
         #Should return wrong
-        criteria_wrong = {"descriptor":{"type":{"in":["base","laser"]}}}
+        criteria_wrong = {"descriptor":{"type":{"in":Type("base/laser")}}}
         self.assertFalse(Criteria(criteria_wrong).checkPersona(self.test_pers))
 
     """
@@ -102,13 +103,18 @@ class MyTestCase_Operators(unittest.TestCase):
     def test_multiple_in_operators_with_type(self):
         desc = self.__class__.test_pers.getDescriptor()
         subset = desc["dummy2_list"][:2]
+        crit_type = Type("base/device/test")
         criteria = {
             "descriptor": {
                 "dummy2_list": {"in": subset},
-                "type": {"in": ["base", "test"]},
-                "type": {"in":"device"}
+                "type": {"in": crit_type},
             }
         }
+
+        print(crit_type.type_tree)
+
+        print(self.__class__.test_pers.getTypeTree())
+
         self.assertTrue(Criteria(criteria).checkPersona(self.__class__.test_pers))
 
 

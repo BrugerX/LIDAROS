@@ -1,4 +1,3 @@
-int64[] channels_nrs
-int64 out_power_w
+interfaces/LaserChannel[] laser_channels
 ---
 bool is_success

@@ -12,6 +12,8 @@ class LaserProfile(ABC,DeviceProfile):
         #For now we assume the power starts out as 0
         self.channel_powers = [0 for x in range(self.nr_channels)]
 
+        #TODO: add services for getChannelPower and getTemperature
+
     @property
     def nr_channels(self) -> str:
         #We use persona.getID() to ensure a single source of truth
@@ -23,6 +25,9 @@ class LaserProfile(ABC,DeviceProfile):
 
     @abstractmethod
     def setChannelPower(self,srv: SetLaserPower):
+        pass
+
+    def getTemperature(self):
         pass
 
 if __name__ == "__main__":

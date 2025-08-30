@@ -1,0 +1,2 @@
+int64 channel_nr
+float64 output_power_w
