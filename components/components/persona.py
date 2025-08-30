@@ -110,6 +110,8 @@ class Persona:
         """
         return copy.copy(self.capabilities)
 
+    def getCapabilitiesNames(self):
+        return list(self.getCapabilities())
 
     #CHATGPT Generated Code - Works as expected!
     def __repr__(self):
@@ -144,7 +146,7 @@ class CriteriaOperator(Enum):
     EQ = "eq"
     IN = "in"
 
-class Criteria:
+class Criterion:
 
     def __init__(self, criteria_dict):
         self.criteria_dict = criteria_dict
@@ -299,8 +301,8 @@ class Criteria:
         :param cap_criteria: The criteria by which we should filter - in v0 we only allow for filtering based off of the names of the criteria.
         :return:
         """
-        cap_pers = pers.getCapabilities()
-        cap_names = list(cap_pers)
+
+        cap_names = pers.getCapabilitiesNames()
 
         for op_key,crit_cap_names in cap_criteria.items():
             operator, _ = self._parseOperator({op_key: crit_cap_names})

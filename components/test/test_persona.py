@@ -1,5 +1,5 @@
 import unittest
-from components.components.persona import Persona, Criteria
+from components.components.persona import Persona, Criterion
 
 class TestPersona(unittest.TestCase):
     def test_persona_doubleslash(self):
